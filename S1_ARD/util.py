@@ -1,11 +1,19 @@
 import math
 import time
+
 import numpy as np
+from numpy.polynomial.polynomial import polyfit
+
 from osgeo import gdal
-from scipy import stats
+
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import AnchoredText
+
+from scipy import stats
+from scipy.stats import gaussian_kde
 from sklearn.metrics import mean_squared_error, r2_score
 
+from spatialist import Raster
 
 # Function to generate one to one plots for each land cover class
 # from specified images. (Utilises function one.)
@@ -148,3 +156,50 @@ def simplify_lc(in_lc):
     in_lc = np.where((in_lc >= 35) & (in_lc <= 39), 35, in_lc)
     in_lc = np.where((in_lc >= 40) & (in_lc <= 44), 40, in_lc)
     return in_lc
+
+
+def sar_vs_inc(file_sar, file_inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
+               regfun=False):
+    with Raster(file_sar) as ras:
+        # print(ras)
+        sar = ras.matrix()
+    
+    with Raster(file_inc) as inc:
+        # print(inc)
+        inc = inc.matrix()
+    
+    inc = inc * 180 / math.pi
+    
+    sar[sar == nodata] = np.nan
+    
+    mask = ~np.isnan(sar)
+    
+    step = math.floor(sar.size / nsamples)
+    
+    sar_sub = sar[mask][0::step]
+    inc_sub = inc[mask][0::step]
+    
+    if db_convert:
+        sar_sub = 10 * np.log10(sar_sub)
+    
+    # # Calculate the point density
+    xy = np.vstack([sar_sub, inc_sub])
+    z = gaussian_kde(xy)(xy)
+    
+    # # Sort the points by density, so that the densest points are plotted last
+    idx = z.argsort()
+    x, y, z = inc_sub[idx], sar_sub[idx], z[idx]
+    
+    # fig, ax = plt.subplots()
+    plt.scatter(x, y, c=z, s=20, edgecolor='')
+    
+    # add linear regression equation
+    if regfun:
+        b, m = polyfit(x, y, 1)
+        text_box = AnchoredText('y = {:.2f} + {:.2f} * x'.format(b, m), frameon=True, loc='lower left', pad=0.1)
+        plt.setp(text_box.patch, facecolor='white', alpha=0.5)
+        plt.gca().add_artist(text_box)
+    
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
