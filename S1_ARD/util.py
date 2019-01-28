@@ -174,8 +174,7 @@ def sar_vs_inc(file_sar, file_inc, nsamples, nodata=-99, db_convert=False, title
     
     mask = ~np.isnan(sar)
     
-    step = math.floor(sar.size / nsamples)
-    
+    step = int(math.floor(sar.size / nsamples))
     sar_sub = sar[mask][0::step]
     inc_sub = inc[mask][0::step]
     
