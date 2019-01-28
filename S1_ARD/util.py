@@ -159,7 +159,7 @@ def simplify_lc(in_lc):
 
 
 def sar_vs_inc(file_sar, file_inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
-               regfun=False):
+               regfun=False, ymin=None, ymax=None):
     with Raster(file_sar) as ras:
         # print(ras)
         sar = ras.matrix()
@@ -202,3 +202,7 @@ def sar_vs_inc(file_sar, file_inc, nsamples, nodata=-99, db_convert=False, title
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+
+    # set axes range
+    bottom, top = plt.ylim()
+    plt.ylim(ymin if ymin is not None else bottom, ymax if ymax is not None else ymax)
