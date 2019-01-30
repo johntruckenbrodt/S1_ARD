@@ -4,15 +4,16 @@ import time
 import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
-from osgeo import gdal
-
-import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
-
 from scipy import stats
 from scipy.stats import gaussian_kde
 from sklearn.metrics import mean_squared_error, r2_score
 
+from astropy.convolution import convolve, CustomKernel
+
+import matplotlib.pyplot as plt
+from matplotlib.offsetbox import AnchoredText
+
+from osgeo import gdal
 from spatialist import Raster
 
 # Function to generate one to one plots for each land cover class
@@ -206,3 +207,82 @@ def sar_vs_inc(file_sar, file_inc, nsamples, nodata=-99, db_convert=False, title
     # set axes range
     bottom, top = plt.ylim()
     plt.ylim(ymin if ymin is not None else bottom, ymax if ymax is not None else ymax)
+
+
+def dem_aspect(img):
+    
+    kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8.)
+    xchangerate_array = convolve(img, kernel, normalize_kernel=False)
+    
+    kernel = CustomKernel(np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / 8.)
+    ychangerate_array = convolve(img, kernel, normalize_kernel=False)
+    
+    aspect = 180. / np.pi * np.arctan(ychangerate_array, -xchangerate_array)
+    aspect_value = aspect
+    
+    mask = aspect < 0.0
+    aspect_value[mask] = 90.0 - aspect[mask]
+    
+    mask = aspect > 90.0
+    aspect_value[mask] = 360.0 - aspect[mask] + 90.0
+    
+    mask = (aspect >= 0.0) & (aspect < 90.0)
+    aspect_value[mask] = 90.0 - aspect[mask]
+    return aspect_value
+
+
+def dem_slope(img, x_cell_size, y_cell_size):
+    
+    kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / (8. * x_cell_size))
+    xchangerate_array = convolve(img, kernel, normalize_kernel=False)
+    
+    kernel = CustomKernel(np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / (8. * y_cell_size))
+    ychangerate_array = convolve(img, kernel, normalize_kernel=False)
+    
+    slope_radians = np.arctan(np.sqrt(np.square(xchangerate_array) + np.square(ychangerate_array)))
+    slope_degrees = np.rad2deg(slope_radians)
+    return slope_degrees
+
+
+def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
+    # convert deg to rad and geographic heading to mathematical angle
+    head_ang = math.radians(90. - head_angle)
+    inc_ang = math.radians(inc_angle)
+    
+    # flight direction vector
+    vel_vec = np.array([math.cos(head_ang), math.sin(head_ang), 0])
+    
+    # viewing plane (look vector)
+    if look_dir == 'right':
+        look_vec = np.array([math.sin(inc_ang) * math.sin(head_ang),
+                             -math.sin(inc_ang) * math.cos(head_ang),
+                             -math.cos(inc_ang)])
+        viewplane = np.cross(look_vec, vel_vec)
+    
+    elif look_dir == 'left':
+        look_vec = np.array([-math.sin(inc_ang) * math.sin(head_ang),
+                             math.sin(inc_ang) * math.cos(head_ang),
+                             -math.cos(inc_ang)])
+        viewplane = np.cross(vel_vec, look_vec)
+    else:
+        raise ValueError("look_dir must either be 'left' or 'right'")
+    
+    # map in aspect and slope coordinates
+    angle = np.deg2rad(np.array([list(range(1, 361)), ] * 90))
+    radius = np.array([[math.radians(x) for x in range(1, 91)], ] * 360).T
+    
+    # surface normal vector
+    normal = np.array([np.sin(radius) * np.cos(angle),
+                       np.sin(radius) * np.sin(angle),
+                       np.cos(radius)])
+    
+    # condition that facet is visible by radar
+    view_prod = normal[0, :, :] * look_vec[0] + normal[1, :, :] * look_vec[1] + normal[2, :, :] * look_vec[2]
+    
+    # condition that facet is tilted positive in viewplane
+    mont_prod = normal[0, :, :] * viewplane[0] + normal[1, :, :] * viewplane[1] + normal[2, :, :] * viewplane[2]
+    
+    # visible map_array
+    visible_map_array = (view_prod < 0) & (mont_prod > 0)
+    
+    return visible_map_array
