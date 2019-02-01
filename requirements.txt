@@ -7,3 +7,5 @@ IPython
 ipywidgets
 scikit-learn
 pyroSAR
+astropy
+spatialist
