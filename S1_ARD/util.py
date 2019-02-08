@@ -163,7 +163,7 @@ def simplify_lc(in_lc):
 def sar_vs_inc(sar, inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
                regfun=False, ymin=None, ymax=None, mask=None):
     
-    inc = inc * 180 / math.pi
+    inc = np.rad2deg(inc)
     
     sar[sar == nodata] = np.nan
     
