@@ -160,25 +160,21 @@ def simplify_lc(in_lc):
     return in_lc
 
 
-def sar_vs_inc(file_sar, file_inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
-               regfun=False, ymin=None, ymax=None):
-    with Raster(file_sar) as ras:
-        # print(ras)
-        sar = ras.matrix()
-    
-    with Raster(file_inc) as inc:
-        # print(inc)
-        inc = inc.matrix()
+def sar_vs_inc(sar, inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
+               regfun=False, ymin=None, ymax=None, mask=None):
     
     inc = inc * 180 / math.pi
     
     sar[sar == nodata] = np.nan
     
-    mask = ~np.isnan(sar)
+    if mask is not None:
+        sar[~mask] = np.nan
+    
+    nanmask = ~np.isnan(sar)
     
     step = int(math.floor(sar.size / nsamples))
-    sar_sub = sar[mask][0::step]
-    inc_sub = inc[mask][0::step]
+    sar_sub = sar[nanmask][0::step]
+    inc_sub = inc[nanmask][0::step]
     
     if db_convert:
         sar_sub = 10 * np.log10(sar_sub)
