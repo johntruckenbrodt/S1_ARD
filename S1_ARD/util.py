@@ -162,7 +162,6 @@ def simplify_lc(in_lc):
 
 def sar_vs_inc(sar, inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
                regfun=False, ymin=None, ymax=None, mask=None):
-    
     inc = np.rad2deg(inc)
     
     sar[sar == nodata] = np.nan
@@ -209,10 +208,12 @@ def sar_vs_inc(sar, inc, nsamples, nodata=-99, db_convert=False, title='', xlabe
 def dem_aspect(img):
     boundary = 'extend'
     kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8.)
-    xchangerate_array = -convolve(img, kernel, normalize_kernel=False, boundary=boundary)
+    xchangerate_array = -convolve(img, kernel, normalize_kernel=False, boundary=boundary,
+                                  nan_treatment='fill', fill_value=np.nan)
     
     kernel = CustomKernel(np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / 8.)
-    ychangerate_array = -convolve(img, kernel, normalize_kernel=False, boundary=boundary)
+    ychangerate_array = -convolve(img, kernel, normalize_kernel=False, boundary=boundary,
+                                  nan_treatment='fill', fill_value=np.nan)
     
     aspect = np.rad2deg(np.arctan2(ychangerate_array, -xchangerate_array))
     aspect_value = np.copy(aspect)
@@ -231,10 +232,12 @@ def dem_aspect(img):
 def dem_slope(img, x_cell_size, y_cell_size):
     boundary = 'extend'
     kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / (8. * x_cell_size))
-    xchangerate_array = convolve(img, kernel, normalize_kernel=False, boundary=boundary)
+    xchangerate_array = convolve(img, kernel, normalize_kernel=False, boundary=boundary,
+                                 nan_treatment='fill', fill_value=np.nan)
     
     kernel = CustomKernel(np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / (8. * y_cell_size))
-    ychangerate_array = convolve(img, kernel, normalize_kernel=False, boundary=boundary)
+    ychangerate_array = convolve(img, kernel, normalize_kernel=False, boundary=boundary,
+                                 nan_treatment='fill', fill_value=np.nan)
     
     slope_radians = np.arctan(np.sqrt(np.square(xchangerate_array) + np.square(ychangerate_array)))
     slope_degrees = np.rad2deg(slope_radians)
