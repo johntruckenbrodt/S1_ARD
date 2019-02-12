@@ -218,14 +218,16 @@ def dem_aspect(img):
     aspect = np.rad2deg(np.arctan2(ychangerate_array, -xchangerate_array))
     aspect_value = np.copy(aspect)
     
-    mask = aspect < 0.0
-    aspect_value[mask] = 90.0 - aspect[mask]
-    
-    mask = aspect > 90.0
-    aspect_value[mask] = 360.0 - aspect[mask] + 90.0
-    
-    mask = (aspect >= 0.0) & (aspect < 90.0)
-    aspect_value[mask] = 90.0 - aspect[mask]
+    # numpy raises a warning if np.nan values are set to False in a mask
+    with np.errstate(invalid='ignore'):
+        mask = aspect < 0.0
+        aspect_value[mask] = 90.0 - aspect[mask]
+        
+        mask = aspect > 90.0
+        aspect_value[mask] = 360.0 - aspect[mask] + 90.0
+        
+        mask = (aspect >= 0.0) & (aspect < 90.0)
+        aspect_value[mask] = 90.0 - aspect[mask]
     return aspect_value
 
 
