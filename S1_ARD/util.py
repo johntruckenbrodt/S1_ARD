@@ -259,6 +259,7 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsa
     if ax is None or not ax.__class__.__name__ == 'PolarAxesSubplot':
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='polar')
+    ax.set_theta_zero_location('N')
     c = ax.scatter(x, y, c=z, s=10, alpha=0.75)
     ax.contour(xx, yy, vis_map, colors='red')
     
