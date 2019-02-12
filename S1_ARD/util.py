@@ -230,7 +230,7 @@ def dem_aspect(img):
     return aspect_value
 
 
-def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000):
+def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000, title=''):
     
     nanmask = (~np.isnan(slope)) & (~np.isnan(aspect))
     sample_ids = sampler(nanmask, nsamples)
@@ -262,7 +262,7 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsa
     ax.set_theta_zero_location('N')
     c = ax.scatter(x, y, c=z, s=10, alpha=0.75)
     ax.contour(xx, yy, vis_map, colors='red')
-    
+    ax.set_title(title)
     ax.set_ylim(0, 95)
 
 
