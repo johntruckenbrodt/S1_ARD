@@ -230,7 +230,7 @@ def dem_aspect(img):
     return aspect_value
 
 
-def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir, nsamples=1000):
+def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000):
     
     nanmask = (~np.isnan(slope)) & (~np.isnan(aspect))
     sample_ids = sampler(nanmask, nsamples)
