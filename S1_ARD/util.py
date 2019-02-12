@@ -1,6 +1,5 @@
 import math
 import time
-
 import numpy as np
 from numpy.polynomial.polynomial import polyfit
 
@@ -159,7 +158,7 @@ def simplify_lc(in_lc):
     return in_lc
 
 
-def sar_vs_inc(sar, inc, nsamples, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
+def sar_vs_inc(sar, inc, nsamples=1000, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
                regfun=False, ymin=None, ymax=None, mask=None):
     inc = np.rad2deg(inc)
     
@@ -168,11 +167,12 @@ def sar_vs_inc(sar, inc, nsamples, nodata=-99, db_convert=False, title='', xlabe
     if mask is not None:
         sar[~mask] = np.nan
     
-    nanmask = ~np.isnan(sar)
+    nanmask = (~np.isnan(sar)) & (~np.isnan(inc))
+
+    sample_ids = sampler(nanmask, nsamples)
     
-    step = int(math.floor(sar.size / nsamples))
-    sar_sub = sar[nanmask][0::step]
-    inc_sub = inc[nanmask][0::step]
+    sar_sub = sar.flatten()[sample_ids]
+    inc_sub = inc.flatten()[sample_ids]
     
     if db_convert:
         sar_sub = 10 * np.log10(sar_sub)
@@ -230,7 +230,14 @@ def dem_aspect(img):
     return aspect_value
 
 
-def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir):
+def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir, nsamples=1000):
+    
+    nanmask = (~np.isnan(slope)) & (~np.isnan(aspect))
+    sample_ids = sampler(nanmask, nsamples)
+    
+    slope = slope.flatten()[sample_ids]
+    aspect = aspect.flatten()[sample_ids]
+    
     # # Calculate the point density
     xy = np.vstack([slope, aspect])
     z = gaussian_kde(xy)(xy)
@@ -271,6 +278,14 @@ def dem_slope(img, x_cell_size, y_cell_size):
     slope_radians = np.arctan(np.sqrt(np.square(xchangerate_array) + np.square(ychangerate_array)))
     slope_degrees = np.rad2deg(slope_radians)
     return slope_degrees
+
+
+def sampler(nanmask, nsamples=None, seed=42):
+    indices = np.where(nanmask.flatten())[0]
+    samplesize = min(indices.size, nsamples) if nsamples is not None else indices.size
+    np.random.seed(seed)
+    sample_ids = np.random.choice(a=indices, size=samplesize, replace=False)
+    return sample_ids
 
 
 def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
