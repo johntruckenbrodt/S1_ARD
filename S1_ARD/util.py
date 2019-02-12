@@ -231,6 +231,27 @@ def dem_aspect(img):
     return aspect_value
 
 
+def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir):
+    # # Calculate the point density
+    xy = np.vstack([slope, aspect])
+    z = gaussian_kde(xy)(xy)
+    
+    # # Sort the points by density, so that the densest points are plotted last
+    idx = z.argsort()
+    x, y, z = aspect[idx], slope[idx], z[idx]
+    
+    # create visible angle map meshgrid
+    asp = np.radians(np.arange(0, 361))
+    slp = np.arange(0, 91)
+    xx, yy = np.meshgrid(asp, slp, sparse=False)
+    vis_map = visible_sar_angle_map(head_angle, inc_angle, look_dir)
+    
+    plt.subplot(111, projection='polar')
+    plt.scatter(x, y, c=z, s=10, alpha=0.75)
+    plt.contour(xx, yy, vis_map, colors='red')
+    plt.ylim(0, 95)
+
+
 def dem_slope(img, x_cell_size, y_cell_size):
     boundary = 'extend'
     kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / (8. * x_cell_size))
