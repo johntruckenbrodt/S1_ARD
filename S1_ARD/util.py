@@ -245,10 +245,17 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir):
                          sparse=False)
     vis_map = visible_sar_angle_map(head_angle, inc_angle, look_dir)
     
-    plt.subplot(111, projection='polar')
-    plt.scatter(x, y, c=z, s=10, alpha=0.75)
-    plt.contour(xx, yy, vis_map, colors='red')
-    plt.ylim(0, 95)
+    # get current axis if a figure exists
+    ax = plt.gca() if plt.get_fignums() else None
+    
+    # create a new figure if there is no axis or the projection of the current axis is not polar
+    if ax is None or not ax.__class__.__name__ == 'PolarAxesSubplot':
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='polar')
+    c = ax.scatter(x, y, c=z, s=10, alpha=0.75)
+    ax.contour(xx, yy, vis_map, colors='red')
+    
+    ax.set_ylim(0, 95)
 
 
 def dem_slope(img, x_cell_size, y_cell_size):
