@@ -270,8 +270,9 @@ def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
         raise ValueError("look_dir must either be 'left' or 'right'")
     
     # map in aspect and slope coordinates
-    angle = np.deg2rad(np.array([list(range(1, 361)), ] * 90))
-    radius = np.array([[math.radians(x) for x in range(1, 91)], ] * 360).T
+    x = np.deg2rad(np.arange(0, 361))
+    y = np.deg2rad(np.arange(0, 91))
+    angle, radius = np.meshgrid(x, y, sparse=False)
     
     # surface normal vector
     normal = np.array([np.sin(radius) * np.cos(angle),
