@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 
 from osgeo import gdal
-from spatialist import Raster
 
 
 # Function to generate one to one plots for each land cover class
@@ -240,10 +239,10 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir):
     idx = z.argsort()
     x, y, z = aspect[idx], slope[idx], z[idx]
     
-    # create visible angle map meshgrid
-    asp = np.radians(np.arange(0, 361))
-    slp = np.arange(0, 91)
-    xx, yy = np.meshgrid(asp, slp, sparse=False)
+    # create visible angle map mesh grid
+    xx, yy = np.meshgrid(np.radians(np.arange(0, 361)),
+                         np.arange(0, 91),
+                         sparse=False)
     vis_map = visible_sar_angle_map(head_angle, inc_angle, look_dir)
     
     plt.subplot(111, projection='polar')
@@ -291,9 +290,9 @@ def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
         raise ValueError("look_dir must either be 'left' or 'right'")
     
     # map in aspect and slope coordinates
-    x = np.deg2rad(np.arange(0, 361))
-    y = np.deg2rad(np.arange(0, 91))
-    angle, radius = np.meshgrid(x, y, sparse=False)
+    angle, radius = np.meshgrid(np.radians(np.arange(0, 361)),
+                                np.radians(np.arange(0, 91)),
+                                sparse=False)
     
     # surface normal vector
     normal = np.array([np.sin(radius) * np.cos(angle),
