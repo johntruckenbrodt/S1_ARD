@@ -14,6 +14,8 @@ from matplotlib.offsetbox import AnchoredText
 
 from osgeo import gdal
 
+from spatialist import haversine, Raster
+
 
 # Function to generate one to one plots for each land cover class
 # from specified images. (Utilises function one.)
@@ -294,6 +296,16 @@ def dem_slope(img, xres_m, yres_m):
     slope_radians = np.arctan(np.sqrt(np.square(xchangerate_array) + np.square(ychangerate_array)))
     slope_degrees = np.rad2deg(slope_radians)
     return slope_degrees
+
+
+def dem_degree2meter(demfile):
+    with Raster(demfile) as ras:
+        res_lon, res_lat = ras.res
+        lat = (ras.geo['ymin'] + ras.geo['ymax']) / 2
+        lon = (ras.geo['xmin'] + ras.geo['xmax']) / 2
+    post_north = haversine(lat, lon, lat + res_lat, lon)
+    post_east = haversine(lat, lon, lat, lon + res_lon)
+    return post_east, post_north
 
 
 def sampler(nanmask, nsamples=None, seed=42):
