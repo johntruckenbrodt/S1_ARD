@@ -168,7 +168,7 @@ def sar_vs_inc(sar, inc, nsamples=1000, nodata=-99, db_convert=False, title='', 
         sar[~mask] = np.nan
     
     nanmask = (~np.isnan(sar)) & (~np.isnan(inc))
-
+    
     sample_ids = sampler(nanmask, nsamples)
     
     sar_sub = sar.flatten()[sample_ids]
@@ -231,7 +231,6 @@ def dem_aspect(img):
 
 
 def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000, title=''):
-    
     nanmask = (~np.isnan(slope)) & (~np.isnan(aspect))
     sample_ids = sampler(nanmask, nsamples)
     
@@ -266,13 +265,29 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsa
     ax.set_ylim(0, 95)
 
 
-def dem_slope(img, x_cell_size, y_cell_size):
+def dem_slope(img, xres_m, yres_m):
+    """
+    compute the slope of a DEM
+    
+    Parameters
+    ----------
+    img: numpy.ndarray
+        the input DEM
+    xres_m: int or float
+        the x resolution of the DEM in same units as the height values
+    yres_m: int or float
+        the x resolution of the DEM in same units as the height values
+
+    Returns
+    -------
+
+    """
     boundary = 'extend'
-    kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / (8. * x_cell_size))
+    kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / (8. * xres_m))
     xchangerate_array = convolve(img, kernel, normalize_kernel=False, boundary=boundary,
                                  nan_treatment='fill', fill_value=np.nan)
     
-    kernel = CustomKernel(np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / (8. * y_cell_size))
+    kernel = CustomKernel(np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]]) / (8. * yres_m))
     ychangerate_array = convolve(img, kernel, normalize_kernel=False, boundary=boundary,
                                  nan_treatment='fill', fill_value=np.nan)
     
