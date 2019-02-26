@@ -1,3 +1,4 @@
+import os
 import math
 import time
 import numpy as np
@@ -12,9 +13,9 @@ from astropy.convolution import convolve, CustomKernel
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 
-from osgeo import gdal
+from osgeo import gdal, ogr
 
-from spatialist import haversine, Raster
+from spatialist import haversine, Raster, Vector, crsConvert
 
 
 # Function to generate one to one plots for each land cover class from specified images.
@@ -369,3 +370,19 @@ def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
     visible_map_array = (view_prod < 0) & (mont_prod > 0)
     
     return visible_map_array
+
+
+def wkt2shp(wkt, srs, outname):
+    geom = ogr.CreateGeometryFromWkt(wkt)
+    geom.FlattenTo2D()
+
+    srs = crsConvert(srs, 'osr')
+    
+    layername = os.path.splitext(os.path.basename(outname))[0]
+    
+    with Vector(driver='Memory') as bbox:
+        bbox.addlayer(layername, srs, geom.GetGeometryType())
+        bbox.addfield('area', ogr.OFTReal)
+        bbox.addfeature(geom, fields={'area': geom.Area()})
+        bbox.write(outname, format='ESRI Shapefile')
+    geom = None
