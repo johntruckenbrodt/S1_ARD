@@ -17,60 +17,66 @@ from osgeo import gdal
 from spatialist import haversine, Raster
 
 
-# Function to generate one to one plots for each land cover class
-# from specified images. (Utilises function one.)
-def one2oneSARplots(in_sar1_img, in_sar2_img, band, sar1_ref, sar2_ref, lc, lc_ints, lc_string):
-    # Read data.
-    sar1 = readimg2array(in_sar1_img, band, 1)
-    sar2 = readimg2array(in_sar2_img, band, 1)
-    # Iterate land covers.
-    for p, i in enumerate(lc_ints):
-        start_time = time.time()
-        # Calculate correlation statistics (RMSE & R^2).
-        s1_c = sar1[lc == i]
-        s2_c = sar2[lc == i]
+# Function to generate one to one plots for each land cover class from specified images.
+def one2oneSARplots(sar1, sar2, xlab, ylab, title, nsamples=1000, regfun=False, mask=None):
+    
+    if mask is not None:
+        sar1[~mask] = np.nan
+        sar2[~mask] = np.nan
+    
+    nanmask = (np.isfinite(sar1)) & (np.isfinite(sar2))
+    
+    sample_ids = sampler(nanmask, nsamples)
+    
+    s1_sub = sar1.flatten()[sample_ids]
+    s2_sub = sar2.flatten()[sample_ids]
+    
+    lowest = min([np.min(s1_sub), np.min(s2_sub)])
+    highest = max([np.max(s1_sub), np.max(s2_sub)])
+    
+    o2o_min = (lowest, highest)
+    o2o_max = (lowest, highest)
+
+    # calculate correlation statistics (RMSE & R^2).
+    rmse = math.sqrt(mean_squared_error(s1_sub, s2_sub))
+    r2 = r2_score(s1_sub, s2_sub)
+    # slope, intercept, r_value, p_value, std_err = stats.linregress(s1_sub, s2_sub)
+    # line = slope * s1_sub + intercept
+    
+    # # Calculate the point density
+    xy = np.vstack([s1_sub, s2_sub])
+    z = gaussian_kde(xy)(xy)
+    
+    # # Sort the points by density, so that the densest points are plotted last
+    idx = z.argsort()
+    x, y, z = s1_sub[idx], s2_sub[idx], z[idx]
+    
+    # Plot SAR vars sliced to pixels of land cover.
+    plt.scatter(x, y, c=z, s=1)
+    plt.xlabel('%s' % xlab)
+    plt.ylabel('%s' % ylab)
+    plt.title(title)
+    plt.xlim(lowest - 1, highest + 1)
+    plt.ylim(lowest - 1, highest + 1)
+    # Add one to one line.
+    plt.plot(o2o_min, o2o_max, color='black')
+    
+    # add linear regression equation
+    if regfun:
+        b, m = polyfit(s1_sub, s2_sub, 1)
+        text = 'y = {:.2f} + {:.2f} * x\n' \
+               'RMSE: {:.2f}\n' \
+               '$R^2$: {:.2f}\n' \
+               'n: {}'.format(b, m, rmse, r2, len(s1_sub))
         
-        sar3 = s1_c[(np.isfinite(s1_c)) & (np.isfinite(s2_c))]
-        sar4 = s2_c[(np.isfinite(s1_c)) & (np.isfinite(s2_c))]
-        print(np.shape(sar3))
-        print(np.shape(sar4))
-        lowest = min([min(sar3), min(sar4)])
-        highest = max([max(sar3), max(sar4)])
-        o2o_min = [lowest, highest]
-        o2o_max = [lowest, highest]
-        
-        num = len(sar3)
-        
-        rmse = math.sqrt(mean_squared_error(sar3, sar4))
-        print(rmse)
-        r2 = r2_score(sar3, sar4)
-        print(r2)
-        
-        slope, intercept, r_value, p_value, std_err = stats.linregress(sar3, sar4)
-        line = slope * s1_c + intercept
-        print(r_value ** 2, p_value, std_err, intercept, slope)
-        
-        # Plot SAR vars sliced to pixels of land cover.
-        plt.scatter(sar1[lc == i], sar2[lc == i], s=0.1)
-        plt.xlabel('%s' % (sar1_ref))
-        plt.ylabel('%s' % (sar2_ref))
-        plt.title('%s \n %s vs %s \n N=%s' % (lc_string[p], sar1_ref, sar2_ref, num))
-        plt.xlim(lowest, highest)
-        plt.ylim(lowest, highest)
-        # Add one to one line.
-        plt.plot(o2o_min, o2o_max, color="black")
-        
-        # Add best fit line.
-        #   plt.plot(np.unique(s1_c), np.poly1d(np.polyfit(s1_c, s2_c, 1))(np.unique(s1_c)))
-        plt.plot(s1_c, line, color="red")
-        
-        plt.grid()
-        plt.show()
-        print("--- %s seconds ---" % (time.time() - start_time))
-    sar1 = None
-    sar2 = None
-    sar3 = None
-    sar4 = None
+        text_box = AnchoredText(text, frameon=True, loc='lower right')
+        plt.setp(text_box.patch, facecolor='white')  # , alpha=0.5
+        plt.gca().add_artist(text_box)
+        ffit = np.poly1d((m, b))
+        x_new = np.linspace(lowest, highest, num=2)
+        plt.plot(x_new, ffit(x_new), color='red')
+    
+    plt.grid()
 
 
 def one2oneSARplotsratio(in_sar1_img, in_sar2_img, vv_band, vh_band, sar1_ref, sar2_ref, lc, lc_ints, lc_string):
@@ -128,8 +134,7 @@ def one2oneSARplotsratio(in_sar1_img, in_sar2_img, vv_band, vh_band, sar1_ref, s
     sar4 = None
 
 
-# Function to read first band of image and convert to dB
-# is SAR input is specified.
+# Function to read first band of image and convert to dB is SAR input is specified.
 def readimg2array(in_img, band, sar):
     start_time = time.time()
     ds = gdal.Open(in_img)
@@ -162,7 +167,6 @@ def simplify_lc(in_lc):
 
 def sar_vs_inc(sar, inc, nsamples=1000, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
                regfun=False, ymin=None, ymax=None, mask=None, rad2deg=False):
-    
     if rad2deg:
         inc = np.rad2deg(inc)
     
