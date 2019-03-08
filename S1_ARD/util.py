@@ -270,6 +270,7 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsa
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='polar')
     ax.set_theta_zero_location('N')
+    ax.set_theta_direction(-1)
     c = ax.scatter(x, y, c=z, s=10, alpha=0.75)
     ax.contour(xx, yy, vis_map, colors='red')
     ax.set_title(title)
