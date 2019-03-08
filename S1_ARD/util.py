@@ -167,7 +167,7 @@ def simplify_lc(in_lc):
 
 
 def sar_vs_inc(sar, inc, nsamples=1000, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
-               regfun=False, ymin=None, ymax=None, mask=None, rad2deg=False):
+               regfun=False, xmin=None, xmax=None, ymin=None, ymax=None, mask=None, rad2deg=False):
     if rad2deg:
         inc = np.rad2deg(inc)
     
@@ -210,7 +210,9 @@ def sar_vs_inc(sar, inc, nsamples=1000, nodata=-99, db_convert=False, title='', 
     
     # set axes range
     bottom, top = plt.ylim()
-    plt.ylim(ymin if ymin is not None else bottom, ymax if ymax is not None else ymax)
+    left, right = plt.xlim()
+    plt.ylim(ymin if ymin is not None else bottom, ymax if ymax is not None else top)
+    plt.xlim(xmin if xmin is not None else left, xmax if xmax is not None else right)
 
 
 def dem_aspect(img):
