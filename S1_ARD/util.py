@@ -2,6 +2,7 @@ import os
 import math
 import time
 import numpy as np
+import multiprocessing as mp
 from numpy.polynomial.polynomial import polyfit
 
 from scipy import stats
@@ -20,7 +21,6 @@ from spatialist import haversine, Raster, Vector, crsConvert
 
 # Function to generate one to one plots for each land cover class from specified images.
 def one2oneSARplots(sar1, sar2, xlab, ylab, title, nsamples=1000, regfun=False, mask=None):
-    
     if mask is not None:
         sar1[~mask] = np.nan
         sar2[~mask] = np.nan
@@ -37,7 +37,7 @@ def one2oneSARplots(sar1, sar2, xlab, ylab, title, nsamples=1000, regfun=False, 
     
     o2o_min = (lowest, highest)
     o2o_max = (lowest, highest)
-
+    
     # calculate correlation statistics (RMSE & R^2).
     rmse = math.sqrt(mean_squared_error(s1_sub, s2_sub))
     r2 = r2_score(s1_sub, s2_sub)
@@ -378,7 +378,7 @@ def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
 def wkt2shp(wkt, srs, outname):
     geom = ogr.CreateGeometryFromWkt(wkt)
     geom.FlattenTo2D()
-
+    
     srs = crsConvert(srs, 'osr')
     
     layername = os.path.splitext(os.path.basename(outname))[0]
@@ -389,3 +389,32 @@ def wkt2shp(wkt, srs, outname):
         bbox.addfeature(geom, fields={'area': geom.Area()})
         bbox.write(outname, format='ESRI Shapefile')
     geom = None
+
+
+def parallel_apply_along_axis(func1d, axis, arr, *args, **kwargs):
+    """
+    Like numpy.apply_along_axis(), but takes advantage of multiple
+    cores.
+    https://stackoverflow.com/questions/45526700/easy-parallelization-of-numpy-apply-along-axis
+    """
+    # Effective axis where apply_along_axis() will be applied by each
+    # worker (any non-zero axis number would work, so as to allow the use
+    # of `np.array_split()`, which is only done on axis 0):
+    effective_axis = 1 if axis == 0 else axis
+    if effective_axis != axis:
+        arr = arr.swapaxes(axis, effective_axis)
+    
+    def unpack(arguments):
+        func1d, axis, arr, args, kwargs = arguments
+        return np.apply_along_axis(func1d, axis, arr, *args, **kwargs)
+    
+    chunks = [(func1d, effective_axis, sub_arr, args, kwargs)
+              for sub_arr in np.array_split(arr, mp.cpu_count())]
+    
+    pool = mp.Pool()
+    individual_results = pool.map(unpack, chunks)
+    # Freeing the workers:
+    pool.close()
+    pool.join()
+    
+    return np.concatenate(individual_results)
