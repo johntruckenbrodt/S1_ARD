@@ -23,6 +23,48 @@ from spatialist import haversine, Raster, Vector, crsConvert, intersect, gdalwar
 
 def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None,regline=False,
             o2o=False, denscol=False, grid=False, xlim=None, ylim=None):
+    """
+    general function for creating scatter plots
+    
+    Parameters
+    ----------
+    x: numpy.ndarray
+        dataset I
+    y: numpy.ndarray
+        dataset II
+    xlab: str
+        the x-axis label
+    ylab: str
+        the y-axis label
+    title: str
+        the plot title
+    nsamples: int
+        the number of data samples to plot
+    mask: numpy.ndarray
+        an optional array for masking the datasets
+    measures: list
+        additional measures to be printed in a text box; current options:
+         - `eq`: the linear regression equation
+         - `rmse`
+         - `r2`
+         - `n`: the number of samples
+    regline: bool
+        draw a linear regression line?
+    o2o: bool
+        draw a data one to one line?
+    denscol: bool
+        color the points by Gaussian density?
+    grid: bool
+        add a mesh grid to the plot?
+    xlim: tuple
+        the x-axis limits
+    ylim: tuple
+        the y-axis limits
+
+    Returns
+    -------
+
+    """
     if mask is None:
         mask = (np.isfinite(x)) & (np.isfinite(y))
     
