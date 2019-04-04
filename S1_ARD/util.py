@@ -72,7 +72,6 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     plt.ylabel(ylab)
     if grid:
         plt.grid()
-    plt.show()
 
 
 def one2oneSARplotsratio(in_sar1_img, in_sar2_img, vv_band, vh_band, sar1_ref, sar2_ref, lc, lc_ints, lc_string):
