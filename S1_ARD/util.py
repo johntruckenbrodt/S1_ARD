@@ -37,10 +37,10 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     if 'eq' in measures:
         text += 'y = {:.2f} + {:.2f} * x\n'.format(b, m)
     if 'rmse' in measures:
-        rmse = math.sqrt(mean_squared_error(x, y))
+        rmse = round(math.sqrt(mean_squared_error(x, y)), 2)
         text += 'RMSE = {:.2f}\n'.format(rmse)
     if 'r2' in measures:
-        r2 = r2_score(x, y)
+        r2 = round(r2_score(x, y), 2)
         text += '$R^2$ = {:.2f}\n'.format(r2)
     if 'n' in measures:
         text += 'n = {}'.format(len(x))
