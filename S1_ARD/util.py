@@ -21,8 +21,8 @@ from osgeo.gdalconst import GA_Update
 from spatialist import haversine, Raster, Vector, crsConvert, intersect, gdalwarp
 
 
-def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None,
-            regline=False, o2o=False, denscol=False, grid=False):
+def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None,regline=False,
+            o2o=False, denscol=False, grid=False, xlim=None, ylim=None):
     if mask is None:
         mask = (np.isfinite(x)) & (np.isfinite(y))
     
@@ -57,6 +57,13 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     else:
         z = None
     plt.scatter(x, y, c=z, s=20, edgecolor='', zorder=3)
+    
+    # set axes range
+    if xlim is not None:
+        plt.xlim(*xlim)
+    if ylim is not None:
+        plt.ylim(*ylim)
+    
     if len(text) > 0:
         text_box = AnchoredText(text, frameon=True, loc='lower right')
         plt.setp(text_box.patch, facecolor='white')  # , alpha=0.5
