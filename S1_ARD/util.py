@@ -34,8 +34,6 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     measures = [] if measures is None else measures
     text = ''
     b, m = polyfit(x, y, 1)
-    lowest = min([np.min(x), np.min(y)])
-    highest = max([np.max(x), np.max(y)])
     if 'eq' in measures:
         text += 'y = {:.2f} + {:.2f} * x\n'.format(b, m)
     if 'rmse' in measures:
@@ -64,16 +62,23 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     if ylim is not None:
         plt.ylim(*ylim)
     
+    # determine plot limits and compute border offset for lines
+    xmin, xmax = plt.xlim()
+    ymin, ymax = plt.ylim()
+    xo = (xmax - xmin) / 100 * 2
+    yo = (ymax - ymin) / 100 * 2
+    
     if len(text) > 0:
         text_box = AnchoredText(text, frameon=True, loc='lower right')
         plt.setp(text_box.patch, facecolor='white')  # , alpha=0.5
         plt.gca().add_artist(text_box)
     if regline:
         ffit = np.poly1d((m, b))
-        x_new = np.linspace(lowest, highest, num=2)
+        x_new = np.linspace(xmin + xo, xmax - xo, num=2)
         plt.plot(x_new, ffit(x_new), color='red', zorder=2)
     if o2o:
-        plt.plot((lowest, highest), (lowest, highest), color='black', zorder=1)
+        plt.plot((xmin + xo, xmax - xo), (ymin + yo, ymax - yo),
+                 color='black', zorder=1)
     plt.title(title)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
