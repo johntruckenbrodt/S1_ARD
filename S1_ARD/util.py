@@ -62,11 +62,9 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     if ylim is not None:
         plt.ylim(*ylim)
     
-    # determine plot limits and compute border offset for lines
+    # determine x-axis limits and compute border offset for lines
     xmin, xmax = plt.xlim()
-    ymin, ymax = plt.ylim()
     xo = (xmax - xmin) / 100 * 2
-    yo = (ymax - ymin) / 100 * 2
     
     if len(text) > 0:
         text_box = AnchoredText(text, frameon=True, loc='lower right')
@@ -77,8 +75,9 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
         x_new = np.linspace(xmin + xo, xmax - xo, num=2)
         plt.plot(x_new, ffit(x_new), color='red', zorder=2)
     if o2o:
-        plt.plot((xmin + xo, xmax - xo), (ymin + yo, ymax - yo),
-                 color='black', zorder=1)
+        ffit = np.poly1d((1, 1))
+        x_new = np.linspace(xmin + xo, xmax - xo, num=2)
+        plt.plot(x_new, ffit(x_new), color='black', zorder=1)
     plt.title(title)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
