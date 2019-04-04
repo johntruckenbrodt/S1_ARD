@@ -19,64 +19,60 @@ from osgeo import gdal, ogr
 from spatialist import haversine, Raster, Vector, crsConvert
 
 
-def scatter(sar1, sar2, xlab, ylab, title, nsamples=1000, regfun=False, mask=None):
+def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False, o2o=False, denscol=False, grid=False):
     if mask is not None:
-        sar1[~mask] = np.nan
-        sar2[~mask] = np.nan
+        x[~mask] = np.nan
+        y[~mask] = np.nan
     
-    nanmask = (np.isfinite(sar1)) & (np.isfinite(sar2))
+    nanmask = (np.isfinite(x)) & (np.isfinite(y))
     
     sample_ids = sampler(nanmask, nsamples)
     
-    s1_sub = sar1.flatten()[sample_ids]
-    s2_sub = sar2.flatten()[sample_ids]
+    x = x.flatten()[sample_ids]
+    y = y.flatten()[sample_ids]
+
+    measures = [] if measures is None else measures
+    text = ''
+    b, m = polyfit(x, y, 1)
+    lowest = min([np.min(x), np.min(y)])
+    highest = max([np.max(x), np.max(y)])
+    if 'eq' in measures:
+        text += 'y = {:.2f} + {:.2f} * x\n'.format(b, m)
+    if 'rmse' in measures:
+        rmse = math.sqrt(mean_squared_error(x, y))
+        text += 'RMSE = {:.2f}\n'.format(rmse)
+    if 'r2' in measures:
+        r2 = r2_score(x, y)
+        text += '$R^2$ = {:.2f}\n'.format(r2)
+    if 'n' in measures:
+        text += 'n = {}'.format(len(x))
+    if denscol:
+        # # Calculate the point density
+        xy = np.vstack([x, y])
+        z = gaussian_kde(xy)(xy)
     
-    lowest = min([np.min(s1_sub), np.min(s2_sub)])
-    highest = max([np.max(s1_sub), np.max(s2_sub)])
-    
-    o2o_min = (lowest, highest)
-    o2o_max = (lowest, highest)
-    
-    # calculate correlation statistics (RMSE & R^2).
-    rmse = math.sqrt(mean_squared_error(s1_sub, s2_sub))
-    r2 = r2_score(s1_sub, s2_sub)
-    # slope, intercept, r_value, p_value, std_err = stats.linregress(s1_sub, s2_sub)
-    # line = slope * s1_sub + intercept
-    
-    # # Calculate the point density
-    xy = np.vstack([s1_sub, s2_sub])
-    z = gaussian_kde(xy)(xy)
-    
-    # # Sort the points by density, so that the densest points are plotted last
-    idx = z.argsort()
-    x, y, z = s1_sub[idx], s2_sub[idx], z[idx]
-    
-    # Plot SAR vars sliced to pixels of land cover.
-    plt.scatter(x, y, c=z, s=1)
-    plt.xlabel('%s' % xlab)
-    plt.ylabel('%s' % ylab)
-    plt.title(title)
-    plt.xlim(lowest - 1, highest + 1)
-    plt.ylim(lowest - 1, highest + 1)
-    # Add one to one line.
-    plt.plot(o2o_min, o2o_max, color='black')
-    
-    # add linear regression equation
-    if regfun:
-        b, m = polyfit(s1_sub, s2_sub, 1)
-        text = 'y = {:.2f} + {:.2f} * x\n' \
-               'RMSE: {:.2f}\n' \
-               '$R^2$: {:.2f}\n' \
-               'n: {}'.format(b, m, rmse, r2, len(s1_sub))
-        
+        # # Sort the points by density, so that the densest points are plotted last
+        idx = z.argsort()
+        x, y, z = x[idx], y[idx], z[idx]
+    else:
+        z = None
+    plt.scatter(x, y, c=z, s=20, edgecolor='', zorder=3)
+    if len(text) > 0:
         text_box = AnchoredText(text, frameon=True, loc='lower right')
         plt.setp(text_box.patch, facecolor='white')  # , alpha=0.5
         plt.gca().add_artist(text_box)
+    if regline:
         ffit = np.poly1d((m, b))
         x_new = np.linspace(lowest, highest, num=2)
-        plt.plot(x_new, ffit(x_new), color='red')
-    
-    plt.grid()
+        plt.plot(x_new, ffit(x_new), color='red', zorder=2)
+    if o2o:
+        plt.plot((lowest, highest), (lowest, highest), color='black', zorder=1)
+    plt.title(title)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    if grid:
+        plt.grid()
+    plt.show()
 
 
 def one2oneSARplotsratio(in_sar1_img, in_sar2_img, vv_band, vh_band, sar1_ref, sar2_ref, lc, lc_ints, lc_string):
