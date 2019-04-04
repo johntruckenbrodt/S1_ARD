@@ -19,8 +19,7 @@ from osgeo import gdal, ogr
 from spatialist import haversine, Raster, Vector, crsConvert
 
 
-# Function to generate one to one plots for each land cover class from specified images.
-def one2oneSARplots(sar1, sar2, xlab, ylab, title, nsamples=1000, regfun=False, mask=None):
+def scatter(sar1, sar2, xlab, ylab, title, nsamples=1000, regfun=False, mask=None):
     if mask is not None:
         sar1[~mask] = np.nan
         sar2[~mask] = np.nan
