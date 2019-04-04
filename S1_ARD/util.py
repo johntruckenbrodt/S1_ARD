@@ -19,18 +19,16 @@ from osgeo import gdal, ogr
 from spatialist import haversine, Raster, Vector, crsConvert
 
 
-def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False, o2o=False, denscol=False, grid=False):
-    if mask is not None:
-        x[~mask] = np.nan
-        y[~mask] = np.nan
+def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None,
+            regline=False, o2o=False, denscol=False, grid=False):
+    if mask is None:
+        mask = (np.isfinite(x)) & (np.isfinite(y))
     
-    nanmask = (np.isfinite(x)) & (np.isfinite(y))
-    
-    sample_ids = sampler(nanmask, nsamples)
+    sample_ids = sampler(mask, nsamples)
     
     x = x.flatten()[sample_ids]
     y = y.flatten()[sample_ids]
-
+    
     measures = [] if measures is None else measures
     text = ''
     b, m = polyfit(x, y, 1)
@@ -50,7 +48,7 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
         # # Calculate the point density
         xy = np.vstack([x, y])
         z = gaussian_kde(xy)(xy)
-    
+        
         # # Sort the points by density, so that the densest points are plotted last
         idx = z.argsort()
         x, y, z = x[idx], y[idx], z[idx]
