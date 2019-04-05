@@ -18,7 +18,7 @@ from matplotlib.offsetbox import AnchoredText
 from osgeo import gdal, ogr
 from osgeo.gdalconst import GA_Update
 
-from spatialist import haversine, Raster, Vector, crsConvert, intersect, gdalwarp
+from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_translate
 
 
 def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None,regline=False,
@@ -474,8 +474,6 @@ def inc_stack(small, gamma, snap, outdir, prefix=''):
     if all([os.path.isfile(x) for x in outnames]):
         return outnames
     
-    print('preparing files for stacking..')
-    
     # set SMALL product nodata GeoTiff value
     with Raster(small)[0:100, 0:100] as ras:
         if ras.nodata is None:
@@ -490,20 +488,27 @@ def inc_stack(small, gamma, snap, outdir, prefix=''):
     if not os.path.isdir(tmpdir):
         os.makedirs(tmpdir)
     
-    # subtract 90 degrees from SMALL product
     small_edit = os.path.join(tmpdir, os.path.basename(small).replace('.tif', '_edit.tif'))
     if not os.path.isfile(small_edit):
-        print('  subtracting 90 degrees from SMALL product')
-        with Raster(small) as ras:
+        print('reducing resolution of SMALL product')
+        gdal_translate(small, small_edit,
+                       options={'xRes': 90, 'yRes': 90, 'resampleAlg': 'average',
+                                'format': 'GTiff'})
+    
+    # subtract 90 degrees from SMALL product
+    small_out = outnames[0]
+    if not os.path.isfile(small_out):
+        print('subtracting 90 degrees from SMALL product')
+        with Raster(small_edit) as ras:
             mat = ras.matrix() - 90
             ras.assign(mat, 0)
-            ras.write(small_edit, format='GTiff', nodata=-99)
-    small = small_edit
+            print('creating {}'.format(small_out))
+            ras.write(small_out, format='GTiff', nodata=-99)
     
     # set GAMMA product nodata value
     with Raster(gamma) as ras:
         if ras.nodata != 0:
-            print('  setting nodata value of GAMMA product')
+            print('setting nodata value of GAMMA product')
             ras2 = gdal.Open(gamma, GA_Update)
             ras2.GetRasterBand(1).SetNoDataValue(0)
             ras2 = None
@@ -511,17 +516,15 @@ def inc_stack(small, gamma, snap, outdir, prefix=''):
     # convert GAMMA product from radians to degrees
     gamma_deg = os.path.join(tmpdir, os.path.basename(gamma).replace('.tif', '_deg.tif'))
     if not os.path.isfile(gamma_deg):
-        print('  converting GAMMA product from radians to degrees')
+        print('converting GAMMA product from radians to degrees')
         with Raster(gamma) as ras:
             mat = np.rad2deg(ras.matrix())
             ras.assign(mat, 0)
             ras.write(gamma_deg, format='GTiff')
     gamma = gamma_deg
     
-    # create common extent
-    with intersect(Raster(gamma).bbox(), Raster(small).bbox()) as inter_tmp:
-        with intersect(Raster(snap).bbox(), inter_tmp) as inter:
-            ext = inter.extent
+    # use extent of SMALL product as reference
+    ext = Raster(small_out).bbox().extent
     
     # create new directory for the stacked files
     if not os.path.isdir(outdir):
@@ -530,11 +533,11 @@ def inc_stack(small, gamma, snap, outdir, prefix=''):
     # warp the products to their common extent
     warp_opts = {'options': ['-q'], 'format': 'GTiff', 'multithread': True,
                  'outputBounds': (ext['xmin'], ext['ymin'], ext['xmax'], ext['ymax']),
-                 'dstNodata': -99, 'xRes': 30, 'yRes': 30, 'resampleAlg': 'bilinear',
+                 'dstNodata': -99, 'xRes': 90, 'yRes': 90, 'resampleAlg': 'bilinear',
                  'dstSRS': 'EPSG:32632'}
     
-    for i, item in enumerate([small, gamma, snap]):
-        outfile = outnames[i]
+    for i, item in enumerate([gamma, snap]):
+        outfile = outnames[i + 1]
         if not os.path.isfile(outfile):
             print('creating {}'.format(outfile))
             gdalwarp(src=item, dst=outfile, options=warp_opts)
