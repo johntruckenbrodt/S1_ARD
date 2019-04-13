@@ -7,7 +7,7 @@ import multiprocessing as mp
 from numpy.polynomial.polynomial import polyfit
 
 from scipy import stats
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, variation
 from sklearn.metrics import mean_squared_error, r2_score
 
 from astropy.convolution import convolve, CustomKernel
@@ -48,6 +48,7 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
          - `rmse`
          - `r2`
          - `n`: the number of samples
+         - `cv_x`, `cv_y`: the coefficient of variation of either x or y
     regline: bool
         draw a linear regression line?
     o2o: bool
@@ -90,6 +91,13 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
         fields.append('$R^2$ = {:.2f}'.format(r2))
     if 'n' in measures:
         fields.append('n = {}'.format(len(x)))
+    if 'cv_x' in measures:
+        cv = round(float(variation(x)), 4)
+        fields.append('CV(x) = {}'.format(cv))
+    if 'cv_y' in measures:
+        # cv = variation(y)
+        cv = round(float(variation(y)), 4)
+        fields.append('CV(y) = {}'.format(cv))
     text = '\n'.join(fields)
     
     if denscol:
