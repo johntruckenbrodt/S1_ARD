@@ -82,7 +82,7 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     if regline or 'eq' in measures:
         b, m = polyfit(x, y, 1)
     if 'eq' in measures:
-        fields.append('y = {:.2f} + {:.2f} * x'.format(b, m))
+        fields.append('y = {:.2f} {} {:.2f} * x'.format(b, '+' if m > 0 else '-',  abs(m)))
     if 'rmse' in measures:
         rmse = round(math.sqrt(mean_squared_error(x, y)), 2)
         fields.append('RMSE = {:.2f}'.format(rmse))
