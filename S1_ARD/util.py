@@ -77,18 +77,21 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     y = y.flatten()[sample_ids]
     
     measures = [] if measures is None else measures
-    text = ''
-    b, m = polyfit(x, y, 1)
+    fields = []
+    if regline or 'eq' in measures:
+        b, m = polyfit(x, y, 1)
     if 'eq' in measures:
-        text += 'y = {:.2f} + {:.2f} * x\n'.format(b, m)
+        fields.append('y = {:.2f} + {:.2f} * x'.format(b, m))
     if 'rmse' in measures:
         rmse = round(math.sqrt(mean_squared_error(x, y)), 2)
-        text += 'RMSE = {:.2f}\n'.format(rmse)
+        fields.append('RMSE = {:.2f}'.format(rmse))
     if 'r2' in measures:
         r2 = round(r2_score(x, y), 2)
-        text += '$R^2$ = {:.2f}\n'.format(r2)
+        fields.append('$R^2$ = {:.2f}'.format(r2))
     if 'n' in measures:
-        text += 'n = {}'.format(len(x))
+        fields.append('n = {}'.format(len(x)))
+    text = '\n'.join(fields)
+    
     if denscol:
         # # Calculate the point density
         xy = np.vstack([x, y])
