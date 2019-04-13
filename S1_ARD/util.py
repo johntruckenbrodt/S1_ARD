@@ -65,8 +65,11 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     -------
 
     """
+    nanmask = (np.isfinite(x)) & (np.isfinite(y))
     if mask is None:
-        mask = (np.isfinite(x)) & (np.isfinite(y))
+        mask = nanmask
+    else:
+        mask = mask & nanmask
     
     sample_ids = sampler(mask, nsamples)
     
