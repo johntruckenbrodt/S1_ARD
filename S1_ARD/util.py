@@ -227,55 +227,6 @@ def simplify_lc(in_lc):
     return in_lc
 
 
-def sar_vs_inc(sar, inc, nsamples=1000, nodata=-99, db_convert=False, title='', xlabel='', ylabel='',
-               regfun=False, xmin=None, xmax=None, ymin=None, ymax=None, mask=None, rad2deg=False):
-    if rad2deg:
-        inc = np.rad2deg(inc)
-    
-    sar[sar == nodata] = np.nan
-    
-    if mask is not None:
-        sar[~mask] = np.nan
-    
-    nanmask = (~np.isnan(sar)) & (~np.isnan(inc))
-    
-    sample_ids = sampler(nanmask, nsamples)
-    
-    sar_sub = sar.flatten()[sample_ids]
-    inc_sub = inc.flatten()[sample_ids]
-    
-    if db_convert:
-        sar_sub = 10 * np.log10(sar_sub)
-    
-    # # Calculate the point density
-    xy = np.vstack([sar_sub, inc_sub])
-    z = gaussian_kde(xy)(xy)
-    
-    # # Sort the points by density, so that the densest points are plotted last
-    idx = z.argsort()
-    x, y, z = inc_sub[idx], sar_sub[idx], z[idx]
-    
-    # fig, ax = plt.subplots()
-    plt.scatter(x, y, c=z, s=20, edgecolor='')
-    
-    # add linear regression equation
-    if regfun:
-        b, m = polyfit(x, y, 1)
-        text_box = AnchoredText('y = {:.2f} + {:.2f} * x'.format(b, m), frameon=True, loc='lower left', pad=0.1)
-        plt.setp(text_box.patch, facecolor='white', alpha=0.5)
-        plt.gca().add_artist(text_box)
-    
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    
-    # set axes range
-    bottom, top = plt.ylim()
-    left, right = plt.xlim()
-    plt.ylim(ymin if ymin is not None else bottom, ymax if ymax is not None else top)
-    plt.xlim(xmin if xmin is not None else left, xmax if xmax is not None else right)
-
-
 def dem_aspect(img):
     boundary = 'extend'
     kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8.)
