@@ -3,7 +3,7 @@ import math
 import time
 import shutil
 import numpy as np
-import multiprocessing as mp
+import pathos.multiprocessing as mp
 from numpy.polynomial.polynomial import polyfit
 
 from scipy import stats
@@ -423,7 +423,7 @@ def parallel_apply_along_axis(func1d, axis, arr, *args, **kwargs):
     chunks = [(func1d, effective_axis, sub_arr, args, kwargs)
               for sub_arr in np.array_split(arr, mp.cpu_count())]
     
-    pool = mp.Pool()
+    pool = mp.Pool(4)
     individual_results = pool.map(unpack, chunks)
     # Freeing the workers:
     pool.close()
