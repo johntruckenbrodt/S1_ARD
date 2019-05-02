@@ -524,3 +524,31 @@ def inc_stack(small, gamma, snap, outdir, prefix=''):
             gdalwarp(src=item, dst=outfile, options=warp_opts)
     shutil.rmtree(tmpdir)
     return outnames
+
+
+def commonextent(*args):
+    """
+    compute the common extent of multiple extent dictionaries
+    
+    Parameters
+    ----------
+    args: dict
+        an extent dictionary as returned by :meth:`spatialist.Vector.extent`
+
+    Returns
+    -------
+    dict:
+        the common extent
+    """
+    ext_new = {}
+    for ext in args:
+        if len(ext_new.keys()) == 0:
+            ext_new = ext
+        else:
+            for key in ['xmin', 'ymin']:
+                if ext[key] > ext_new[key]:
+                    ext_new[key] = ext[key]
+            for key in ['xmax', 'ymax']:
+                if ext[key] < ext_new[key]:
+                    ext_new[key] = ext[key]
+    return ext_new
