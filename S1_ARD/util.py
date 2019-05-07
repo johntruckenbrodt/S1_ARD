@@ -253,9 +253,14 @@ def dem_aspect(img):
     return aspect_value
 
 
-def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000, title=''):
-    nanmask = (~np.isnan(slope)) & (~np.isnan(aspect))
-    sample_ids = sampler(nanmask, nsamples)
+def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000, title='', mask=None):
+    nanmask = (np.isfinite(slope)) & (np.isfinite(aspect))
+    if mask is None:
+        mask = nanmask
+    else:
+        mask = mask & nanmask
+    
+    sample_ids = sampler(mask, nsamples)
     
     slope = slope.flatten()[sample_ids]
     aspect = aspect.flatten()[sample_ids]
