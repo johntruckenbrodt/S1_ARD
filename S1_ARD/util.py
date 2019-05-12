@@ -21,7 +21,7 @@ from osgeo.gdalconst import GA_Update
 from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_translate
 
 
-def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None,regline=False,
+def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False,
             o2o=False, denscol=False, grid=False, xlim=None, ylim=None):
     """
     general function for creating scatter plots
@@ -32,6 +32,8 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
         dataset I
     y: numpy.ndarray
         dataset II
+    z: numpy.ndarray
+        dataset III for coloring the data points; overrides parameter denscol
     xlab: str
         the x-axis label
     ylab: str
@@ -54,7 +56,7 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     o2o: bool
         draw a data one to one line?
     denscol: bool
-        color the points by Gaussian density?
+        color the points by Gaussian density?; overridden by parameter z
     grid: bool
         add a mesh grid to the plot?
     xlim: tuple
@@ -82,7 +84,7 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
     if regline or 'eq' in measures:
         b, m = polyfit(x, y, 1)
     if 'eq' in measures:
-        fields.append('y = {:.2f} {} {:.2f} * x'.format(b, '+' if m > 0 else '-',  abs(m)))
+        fields.append('y = {:.2f} {} {:.2f} * x'.format(b, '+' if m > 0 else '-', abs(m)))
     if 'rmse' in measures:
         rmse = round(math.sqrt(mean_squared_error(x, y)), 2)
         fields.append('RMSE = {:.2f}'.format(rmse))
@@ -100,6 +102,10 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
         fields.append('CV(y) = {}'.format(cv))
     text = '\n'.join(fields)
     
+    if z is not None:
+        z = z.flatten()[sample_ids]
+        denscol = False
+    
     if denscol:
         # # Calculate the point density
         xy = np.vstack([x, y])
@@ -108,8 +114,7 @@ def scatter(x, y, xlab='', ylab='', title='', nsamples=1000, mask=None, measures
         # # Sort the points by density, so that the densest points are plotted last
         idx = z.argsort()
         x, y, z = x[idx], y[idx], z[idx]
-    else:
-        z = None
+    
     plt.scatter(x, y, c=z, s=20, edgecolor='', zorder=3)
     
     # set axes range
