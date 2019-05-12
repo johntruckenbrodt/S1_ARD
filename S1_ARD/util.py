@@ -22,7 +22,7 @@ from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_tra
 
 
 def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False,
-            o2o=False, denscol=False, grid=False, xlim=None, ylim=None):
+            o2o=False, denscol=False, grid=False, xlim=None, ylim=None, sort_z=False):
     """
     general function for creating scatter plots
     
@@ -63,6 +63,8 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
         the x-axis limits
     ylim: tuple
         the y-axis limits
+    sort_z bool
+        if z is not None, sort its values so that points with high z values are plotted last?
 
     Returns
     -------
@@ -105,6 +107,11 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
     if z is not None:
         z = z.flatten()[sample_ids]
         denscol = False
+        
+        # # Sort the points by z, so that points with high z values are plotted last
+        if sort_z:
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
     
     if denscol:
         # # Calculate the point density
