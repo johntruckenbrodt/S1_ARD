@@ -1,4 +1,5 @@
 import os
+import re
 import math
 import time
 import shutil
@@ -569,3 +570,42 @@ def commonextent(*args):
                 if ext[key] < ext_new[key]:
                     ext_new[key] = ext[key]
     return ext_new
+
+
+def clc_legend(filename):
+    """
+    read clc meta data from dedicated CSV file available here:
+    https://www.eea.europa.eu/data-and-maps/data/corine-land-cover-3/corine-land-cover-classes-and/clc_legend.csv
+    
+    Parameters
+    ----------
+    filename: str
+        the CSv file to be read
+
+    Returns
+    -------
+    dict
+        the CSV values in a dictionary
+    """
+    pattern = r'([0-9]{1,2}),' \
+              r'([0-9]{3}),' \
+              r'([a-zA-Z ]*),' \
+              r'(["]*[a-zA-Z ,-/]*["]*),' \
+              r'(["]*[a-zA-Z ,-/]*["]*),' \
+              r'([0-9-]{11})\n'
+    
+    with open(filename, 'r') as clc:
+        keys = clc.readline().strip().split(',')
+        out = dict(zip(keys, [[] for x in keys]))
+        for line in clc:
+            match = re.search(pattern, line)
+            if match:
+                items = match.groups()
+                for i in range(0, len(keys)):
+                    key = keys[i]
+                    if key == 'RGB':
+                        value = tuple([int(x) / 255. for x in items[i].split('-')])
+                    else:
+                        value = items[i].replace('"', '')
+                    out[key].append(value)
+    return out
