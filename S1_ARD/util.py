@@ -52,6 +52,7 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
          - `r2`
          - `n`: the number of samples
          - `cv_x`, `cv_y`: the coefficient of variation of either x or y
+         - `mean_x`, `mean_y`: the mean value of either x or y
     regline: bool
         draw a linear regression line?
     o2o: bool
@@ -103,6 +104,13 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
         # cv = variation(y)
         cv = round(float(variation(y)), 4)
         fields.append('CV(y) = {}'.format(cv))
+    if 'mean_x' in measures:
+        mean = np.mean(x)
+        fields.append(r'$\mu$(x) = {:.2f}'.format(mean))
+    if 'mean_y' in measures:
+        mean = np.mean(y)
+        fields.append(r'$\mu$(y) = {:.2f}'.format(mean))
+    
     text = '\n'.join(fields)
     
     if z is not None:
