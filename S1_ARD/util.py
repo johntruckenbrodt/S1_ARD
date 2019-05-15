@@ -19,7 +19,7 @@ from matplotlib.offsetbox import AnchoredText
 from osgeo import gdal, ogr
 from osgeo.gdalconst import GA_Update
 
-from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_translate
+from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_translate, intersect
 
 
 def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False,
@@ -617,3 +617,43 @@ def clc_legend(filename):
                         value = items[i].replace('"', '')
                     out[key].append(value)
     return out
+
+
+def clc_prep(clc, reference, outname):
+    """
+    resample and crop the corine product to the resolution and extent of a reference image
+    
+    Parameters
+    ----------
+    clc: str
+        the name of the CLC input file
+    reference: str
+        the name of the reference file
+    outname: str
+        the named of the output image
+
+    Returns
+    -------
+
+    """
+    with Raster(reference).bbox() as box_ras:
+        with Raster(clc).bbox() as box_clc:
+            if intersect(box_ras, box_clc) is None:
+                print('no intersect\n' + '-' * 10)
+                return
+    
+    if not os.path.isfile(outname):
+        with Raster(reference) as ras:
+            ref_crs = ras.projection
+            xres, yres = ras.res
+            with ras.bbox() as box:
+                ref_ext = box.extent
+        
+        outputBounds = (ref_ext['xmin'], ref_ext['ymin'], ref_ext['xmax'], ref_ext['ymax'])
+        
+        gdalwarp_opt = {'format': 'GTiff', 'outputBounds': outputBounds, 'multithread': True,
+                        'xRes': xres, 'yRes': yres, 'dstSRS': ref_crs, 'resampleAlg': 'mode'}
+        
+        gdalwarp(src=clc, dst=outname, options=gdalwarp_opt)
+    else:
+        print('outfile already exists')
