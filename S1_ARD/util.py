@@ -23,7 +23,7 @@ from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_tra
 
 
 def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False,
-            o2o=False, denscol=False, grid=False, xlim=None, ylim=None, sort_z=False):
+            o2o=False, denscol=False, grid=False, xlim=None, ylim=None, sort_z=False, legend=False):
     """
     general function for creating scatter plots
     
@@ -65,8 +65,10 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
         the x-axis limits
     ylim: tuple
         the y-axis limits
-    sort_z bool
+    sort_z: bool
         if z is not None, sort its values so that points with high z values are plotted last?
+    legend: bool
+        add a legend for the regression line and one to one line if they exist?
 
     Returns
     -------
@@ -150,14 +152,19 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
     if regline:
         ffit = np.poly1d((m, b))
         x_new = np.linspace(xmin + xo, xmax - xo, num=2)
-        plt.plot(x_new, ffit(x_new), color='red', zorder=2)
+        plt.plot(x_new, ffit(x_new), color='red', zorder=2, label='reg.')
     if o2o:
         ffit = np.poly1d((1, 1))
         x_new = np.linspace(xmin + xo, xmax - xo, num=2)
-        plt.plot(x_new, ffit(x_new), color='black', zorder=1)
+        plt.plot(x_new, ffit(x_new), color='black', zorder=1, label='o2o')
     plt.title(title)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    if legend:
+        ax = plt.gca()
+        handles, labels = ax.get_legend_handles_labels()
+        if len(handles) > 0:
+            plt.legend(handles, labels)
     if grid:
         plt.grid()
 
@@ -639,7 +646,7 @@ def clc_prep(clc, reference, outname):
     with Raster(reference).bbox() as box_ras:
         with Raster(clc).bbox() as box_clc:
             if intersect(box_ras, box_clc) is None:
-                print('no intersect\n' + '-' * 10)
+                print('no intersect')
                 return
     
     if not os.path.isfile(outname):
