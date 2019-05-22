@@ -14,6 +14,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from astropy.convolution import convolve, CustomKernel
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnchoredText
 
 from osgeo import gdal, ogr
@@ -154,9 +155,11 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
         x_new = np.linspace(xmin + xo, xmax - xo, num=2)
         plt.plot(x_new, ffit(x_new), color='red', zorder=2, label='reg.')
     if o2o:
-        ffit = np.poly1d((1, 1))
-        x_new = np.linspace(xmin + xo, xmax - xo, num=2)
-        plt.plot(x_new, ffit(x_new), color='black', zorder=1, label='o2o')
+        ax = plt.gca()
+        line = Line2D([0, 1], [0, 1], color='black', zorder=1, label='o2o')
+        transform = ax.transAxes
+        line.set_transform(transform)
+        ax.add_line(line)
     plt.title(title)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
