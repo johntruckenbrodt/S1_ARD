@@ -285,7 +285,7 @@ def dem_aspect(img):
 
 
 def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000, title='', mask=None):
-    nanmask = (np.isfinite(slope)) & (np.isfinite(aspect))
+    nanmask = np.isfinite(slope) & np.isfinite(aspect)
     if mask is None:
         mask = nanmask
     else:
