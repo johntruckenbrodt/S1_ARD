@@ -75,7 +75,7 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
     -------
 
     """
-    nanmask = (np.isfinite(x)) & (np.isfinite(y))
+    nanmask = np.isfinite(x) & np.isfinite(y)
     if mask is None:
         mask = nanmask
     else:
