@@ -167,7 +167,7 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
         ax = plt.gca()
         handles, labels = ax.get_legend_handles_labels()
         if len(handles) > 0:
-            plt.legend(handles, labels)
+            plt.legend(handles, labels, loc='upper left')
     if grid:
         plt.grid()
 
