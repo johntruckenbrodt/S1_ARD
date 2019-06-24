@@ -928,3 +928,24 @@ def dev_max(arr):
         return maxdev, maxdev_id
     else:
         return np.nan, np.nan
+
+
+def extent2patch(extent):
+    """
+    create a matplotlib rectangle patch from an extent dictionary.
+    
+    Parameters
+    ----------
+    extent: dict
+        an extent dictionary, see e.g. :attr:`spatialist.vector.Vector.extent`
+
+    Returns
+    -------
+    matplotlib.patches.Rectangle
+    """
+    xdiff = extent['xmax'] - extent['xmin']
+    ydiff = extent['ymax'] - extent['ymin']
+    rect = patches.Rectangle((extent['xmin'], extent['ymin']),
+                             xdiff, ydiff, linewidth=2,
+                             edgecolor='r', facecolor='none')
+    return rect
