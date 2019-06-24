@@ -809,8 +809,8 @@ def clc_prepare(reference, outdir, source):
 
     Returns
     -------
-    numpy.ndarray
-            the content of the file written to `outdir`
+    str
+        the name of the file written to `outdir`
     """
     with Raster(reference) as ras:
         xRes, yRes = ras.res
