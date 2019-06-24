@@ -843,3 +843,61 @@ def clc_prepare(reference, outdir, source):
                                      ext['xmax'], ext['ymax'])
         gdalwarp(src=source, dst=clc_sub, options=warp_opts)
     return clc_sub
+
+
+def uzh_prepare(reference, outdir, source):
+    """
+    create an UZH incident angle subset resampled to a reference image.
+    
+    Parameters
+    ----------
+    reference: str
+        the reference file with the target extent
+    outdir: str
+        the directory to write the new file to;
+        new files are named uzh_{epsg}_{index}.tif, e.g. uzh_4326_1.tif.
+    source: str
+        the original product to be subsetted
+
+    Returns
+    -------
+    numpy.ndarray
+        the content of the file written to `outdir`
+    """
+    with Raster(reference) as ras:
+        xRes, yRes = ras.res
+        epsg = ras.epsg
+        ext = ras.extent
+    
+    warp_opts = {'options': ['-q'], 'format': 'GTiff', 'multithread': True,
+                 'dstNodata': -99, 'resampleAlg': 'bilinear'}
+    
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    
+    # find existing files
+    uzh_subs = finder(outdir, ['uzh_[0-9]{4,5}_[0-9].tif'], regex=True)
+    
+    # check if any of the existing files matches the extent of the reference
+    match = False
+    if len(uzh_subs) > 0:
+        for j, sub in enumerate(uzh_subs):
+            with Raster(sub) as ras:
+                if ras.extent == ext:
+                    uzh_sub = sub
+                    match = True
+    if not match:
+        with Raster(source) as ras:
+            if ras.epsg != epsg:
+                raise RuntimeError('CRS mismatch')
+        
+        basename = 'uzh_{}_{}.tif'.format(epsg, len(uzh_subs))
+        uzh_sub = os.path.join(outdir, basename)
+        print('creating', uzh_sub)
+        warp_opts['dstSRS'] = 'EPSG:{}'.format(epsg)
+        warp_opts['xRes'] = xRes
+        warp_opts['yRes'] = yRes
+        warp_opts['outputBounds'] = (ext['xmin'], ext['ymin'],
+                                     ext['xmax'], ext['ymax'])
+        gdalwarp(src=source, dst=uzh_sub, options=warp_opts)
+    return uzh_sub
