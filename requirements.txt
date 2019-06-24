@@ -6,6 +6,6 @@ jupyter
 IPython
 ipywidgets
 scikit-learn
-pyroSAR
+pyroSAR==0.9
 astropy
-spatialist
+spatialist==0.2.9
