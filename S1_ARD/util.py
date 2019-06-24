@@ -901,3 +901,30 @@ def uzh_prepare(reference, outdir, source):
                                      ext['xmax'], ext['ymax'])
         gdalwarp(src=source, dst=uzh_sub, options=warp_opts)
     return uzh_sub
+
+
+def dev_max(arr):
+    """
+    compute the maximum deviation from the median of all array
+    values and the corresponding ID.
+    
+    Parameters
+    ----------
+    arr: numpy.ndarray
+        the 1D array
+    Returns
+    -------
+    tuple
+        (maximum deviation, ID)
+    """
+    if len(arr[~np.isnan(arr)]) > 0:
+        med = np.nanmedian(arr)
+        absdev = abs(arr - med)
+        maxdev = np.nanmax(absdev)
+        if maxdev > 0:
+            maxdev_id = np.nanargmax(absdev)
+        else:
+            maxdev_id = np.nan
+        return maxdev, maxdev_id
+    else:
+        return np.nan, np.nan
