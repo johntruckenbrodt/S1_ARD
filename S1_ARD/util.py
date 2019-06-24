@@ -791,3 +791,55 @@ def clc_prep(clc, reference, outname):
         gdalwarp(src=clc, dst=outname, options=gdalwarp_opt)
     else:
         print('outfile already exists')
+
+
+def clc_prepare(reference, outdir, source):
+    """
+    create a CLC subset resampled to a reference image.
+    
+    Parameters
+    ----------
+    reference: str
+        the reference file with the target CRS and extent
+    outdir: str
+        the directory to write the new file to;
+        new files are named clc{index}.tif, e.g. clc1.tif.
+    source: str
+        the original product to be subsetted
+
+    Returns
+    -------
+    numpy.ndarray
+            the content of the file written to `outdir`
+    """
+    with Raster(reference) as ras:
+        xRes, yRes = ras.res
+        epsg = ras.epsg
+        ext = ras.extent
+    
+    #########################################################################
+    warp_opts = {'options': ['-q'], 'format': 'GTiff', 'multithread': True,
+                 'dstNodata': -99, 'resampleAlg': 'mode'}
+    
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    
+    clc_subs = finder(outdir, ['clc[0-9].tif'], regex=True)
+    
+    match = False
+    if len(clc_subs) > 0:
+        for j, sub in enumerate(clc_subs):
+            with Raster(sub) as ras:
+                if ras.extent == ext:
+                    clc_sub = sub
+                    match = True
+    if not match:
+        clc_sub = os.path.join(outdir, 'clc{}.tif'.format(len(clc_subs)))
+        print('creating', clc_sub)
+        warp_opts['dstSRS'] = 'EPSG:{}'.format(epsg)
+        warp_opts['xRes'] = xRes
+        warp_opts['yRes'] = yRes
+        warp_opts['outputBounds'] = (ext['xmin'], ext['ymin'],
+                                     ext['xmax'], ext['ymax'])
+        gdalwarp(src=source, dst=clc_sub, options=warp_opts)
+    return clc_sub
