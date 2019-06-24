@@ -16,17 +16,20 @@ from astropy.convolution import convolve, CustomKernel
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnchoredText
+from matplotlib import patches
 
 from osgeo import gdal, ogr
 from osgeo.gdalconst import GA_Update
 
 from spatialist import haversine, Raster, Vector, crsConvert, gdalwarp, gdal_translate, intersect
+from spatialist.ancillary import finder
 
 
-def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, measures=None, regline=False,
-            o2o=False, denscol=False, grid=False, xlim=None, ylim=None, sort_z=False, legend=False):
+def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None,
+            measures=None, regline=False, o2o=False, denscol=False, grid=False,
+            xlim=None, ylim=None, sort_z=False, legend=False):
     """
-    general function for creating scatter plots
+    general function for creating scatter plots.
     
     Parameters
     ----------
@@ -35,7 +38,7 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
     y: numpy.ndarray
         dataset II
     z: numpy.ndarray
-        dataset III for coloring the data points; overrides parameter denscol
+        dataset III for coloring the data points; overrides parameter `denscol`
     xlab: str
         the x-axis label
     ylab: str
@@ -52,14 +55,14 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
          - `rmse`
          - `r2`
          - `n`: the number of samples
-         - `cv_x`, `cv_y`: the coefficient of variation of either x or y
-         - `mean_x`, `mean_y`: the mean value of either x or y
+         - `cv_x`, `cv_y`: the coefficient of variation of either `x` or `y`
+         - `mean_x`, `mean_y`: the mean value of either `x` or `y`
     regline: bool
         draw a linear regression line?
     o2o: bool
-        draw a data one to one line?
+        draw a data one-to-one line?
     denscol: bool
-        color the points by Gaussian density?; overridden by parameter z
+        color the points by Gaussian density?; overridden by parameter `z`
     grid: bool
         add a mesh grid to the plot?
     xlim: tuple
@@ -67,9 +70,10 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
     ylim: tuple
         the y-axis limits
     sort_z: bool
-        if z is not None, sort its values so that points with high z values are plotted last?
+        if `z` is not None, sort its values so that points with high `z`
+        values are plotted last?
     legend: bool
-        add a legend for the regression line and one to one line if they exist?
+        add a legend for the regression line and one-to-one line if they exist?
 
     Returns
     -------
@@ -91,7 +95,8 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None, 
     if regline or 'eq' in measures:
         b, m = polyfit(x, y, 1)
     if 'eq' in measures:
-        fields.append('y = {:.2f} {} {:.2f} * x'.format(b, '+' if m > 0 else '-', abs(m)))
+        sign = '+' if m > 0 else '-'
+        fields.append('y = {:.2f} {} {:.2f} * x'.format(b, sign, abs(m)))
     if 'rmse' in measures:
         rmse = round(math.sqrt(mean_squared_error(x, y)), 2)
         fields.append('RMSE = {:.2f}'.format(rmse))
@@ -259,6 +264,19 @@ def simplify_lc(in_lc):
 
 
 def dem_aspect(img):
+    """
+    compute the aspect of a DEM.
+    
+    Parameters
+    ----------
+    img: numpy.ndarray
+        the DEM array
+
+    Returns
+    -------
+    numpy.ndarray
+        the computed aspect array
+    """
     boundary = 'extend'
     kernel = CustomKernel(np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]) / 8.)
     xchangerate_array = -convolve(img, kernel, normalize_kernel=False, boundary=boundary,
@@ -284,7 +302,36 @@ def dem_aspect(img):
     return aspect_value
 
 
-def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsamples=1000, title='', mask=None):
+def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right',
+                     nsamples=1000, title='', mask=None):
+    """
+    create a polar slope-aspect DEM plot superimposed with the area visible to a SAR sensor.
+    
+    Parameters
+    ----------
+    slope: numpy.ndarray
+    aspect: numpy.ndarray
+    head_angle: float
+        the SAR sensor heading
+    inc_angle: float
+        the SAR sensor's incident angle
+    look_dir: str
+        the SAR sensor look direction; either `left` or `right`
+    nsamples: int
+        the number of samples to select from the `slope` and `aspect` arrays
+        using function :func:`~S1_ARD.util.sampler`
+    title: str
+        the plot's title
+    mask: numpy.ndarray
+        an additional binary array to mask the slope and aspect values
+
+    Returns
+    -------
+    
+    See Also
+    --------
+    visible_sar_angle_map
+    """
     nanmask = np.isfinite(slope) & np.isfinite(aspect)
     if mask is None:
         mask = nanmask
@@ -327,7 +374,7 @@ def dem_distribution(slope, aspect, head_angle, inc_angle, look_dir='right', nsa
 
 def dem_slope(img, xres_m, yres_m):
     """
-    compute the slope of a DEM
+    compute the slope of a DEM.
     
     Parameters
     ----------
@@ -336,7 +383,7 @@ def dem_slope(img, xres_m, yres_m):
     xres_m: int or float
         the x resolution of the DEM in same units as the height values
     yres_m: int or float
-        the x resolution of the DEM in same units as the height values
+        the y resolution of the DEM in same units as the height values
 
     Returns
     -------
@@ -357,6 +404,23 @@ def dem_slope(img, xres_m, yres_m):
 
 
 def dem_degree2meter(demfile):
+    """
+    compute the spatial resolution in meters for a DEM with WGS84 degree coordinates.
+    
+    Parameters
+    ----------
+    demfile: str
+        the DEM file
+
+    Returns
+    -------
+    tuple
+        (posting_east, posting_north)
+    
+    See Also
+    --------
+    spatialist.auxil.haversine
+    """
     with Raster(demfile) as ras:
         res_lon, res_lat = ras.res
         lat = (ras.geo['ymin'] + ras.geo['ymax']) / 2
@@ -367,6 +431,28 @@ def dem_degree2meter(demfile):
 
 
 def sampler(nanmask, nsamples=None, seed=42):
+    """
+    central function to select random samples from arrays.
+    
+    Parameters
+    ----------
+    nanmask: numpy.ndarray
+        a mask to limit the sample selection
+    nsamples: int
+        the number of samples to select
+    seed: int
+        seed used to initialize the pseudo-random number generator
+
+    Returns
+    -------
+    numpy.ndarray
+        the generated random samples
+    
+    See Also
+    --------
+    numpy.random.seed
+    numpy.random.choice
+    """
     indices = np.where(nanmask.flatten())[0]
     samplesize = min(indices.size, nsamples) if nsamples is not None else indices.size
     np.random.seed(seed)
@@ -375,6 +461,24 @@ def sampler(nanmask, nsamples=None, seed=42):
 
 
 def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
+    """
+    create a SAR sensor slope-aspect visibility mask;
+    used by :func:`~S1_ARD.util.dem_distribution`.
+    
+    Parameters
+    ----------
+    head_angle: float
+        the SAR sensor heading
+    inc_angle: float
+        the SAR sensor's incident angle
+    look_dir: str
+        the SAR sensor look direction; either `left` or `right`
+
+    Returns
+    -------
+    numpy.ndarray
+        the binary map with aspect-slope coordinates
+    """
     # convert deg to rad and geographic heading to mathematical angle
     head_ang = math.radians(90. - head_angle)
     inc_ang = math.radians(inc_angle)
@@ -424,6 +528,22 @@ def visible_sar_angle_map(head_angle, inc_angle, look_dir='right'):
 
 
 def wkt2shp(wkt, srs, outname):
+    """
+    convert a well-known text string geometry to a shapefile.
+    
+    Parameters
+    ----------
+    wkt: str
+        the well-known text description
+    srs: int, str
+        the spatial reference system; see :func:`spatialist.auxil.crsConvert` for options.
+    outname: str
+        the name of the shapefile to write
+
+    Returns
+    -------
+
+    """
     geom = ogr.CreateGeometryFromWkt(wkt)
     geom.FlattenTo2D()
     
@@ -441,21 +561,24 @@ def wkt2shp(wkt, srs, outname):
 
 def parallel_apply_along_axis(func1d, axis, arr, cores=4, *args, **kwargs):
     """
-    Like numpy.apply_along_axis(), but takes advantage of multiple cores.
-    https://stackoverflow.com/questions/45526700/easy-parallelization-of-numpy-apply-along-axis
+    Like :func:`numpy.apply_along_axis()`, but takes advantage of multiple cores.
+    Adapted from `here <https://stackoverflow.com/questions/45526700/
+    easy-parallelization-of-numpy-apply-along-axis>`_.
     
     Parameters
     ----------
     func1d: function
         the function to be applied
     axis: int
-        the axis along which to apply func1d
-    arr: the input array
-    cores: the number of parallel cores
+        the axis along which to apply `func1d`
+    arr: numpy.ndarray
+        the input array
+    cores: int
+        the number of parallel cores
     args: any
-        Additional arguments to func1d.
+        Additional arguments to `func1d`.
     kwargs: any
-        Additional named arguments to func1d.
+        Additional named arguments to `func1d`.
 
     Returns
     -------
@@ -564,12 +687,12 @@ def inc_stack(small, gamma, snap, outdir, prefix=''):
 
 def commonextent(*args):
     """
-    compute the common extent of multiple extent dictionaries
+    compute the common extent of multiple extent dictionaries.
     
     Parameters
     ----------
     args: dict
-        an extent dictionary as returned by :meth:`spatialist.Vector.extent`
+        an extent dictionary, see e.g. :attr:`spatialist.vector.Vector.extent`
 
     Returns
     -------
@@ -592,13 +715,14 @@ def commonextent(*args):
 
 def clc_legend(filename):
     """
-    read clc meta data from dedicated CSV file available here:
-    https://www.eea.europa.eu/data-and-maps/data/corine-land-cover-3/corine-land-cover-classes-and/clc_legend.csv
+    read clc meta data from the dedicated CSV file available
+    `here <https://www.eea.europa.eu/data-and-maps/data/
+    corine-land-cover-3/corine-land-cover-classes-and/clc_legend.csv>`_.
     
     Parameters
     ----------
     filename: str
-        the CSv file to be read
+        the CSV file to be read
 
     Returns
     -------
@@ -631,7 +755,7 @@ def clc_legend(filename):
 
 def clc_prep(clc, reference, outname):
     """
-    resample and crop the corine product to the resolution and extent of a reference image
+    resample and crop the corine product to the resolution and extent of a reference image.
     
     Parameters
     ----------
