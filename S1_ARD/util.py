@@ -935,7 +935,7 @@ def dev_max(arr):
         return np.nan, np.nan
 
 
-def extent2patch(extent):
+def extent2patch(extent, edgecolor='r'):
     """
     create a matplotlib rectangle patch from an extent dictionary.
     
@@ -943,6 +943,8 @@ def extent2patch(extent):
     ----------
     extent: dict
         an extent dictionary, see e.g. :attr:`spatialist.vector.Vector.extent`
+    edgecolor: str
+        the edge color of the path
 
     Returns
     -------
@@ -952,5 +954,5 @@ def extent2patch(extent):
     ydiff = extent['ymax'] - extent['ymin']
     rect = patches.Rectangle((extent['xmin'], extent['ymin']),
                              xdiff, ydiff, linewidth=2,
-                             edgecolor='r', facecolor='none')
+                             edgecolor=edgecolor, facecolor='none')
     return rect
