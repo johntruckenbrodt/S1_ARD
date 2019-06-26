@@ -27,7 +27,8 @@ from spatialist.ancillary import finder
 
 def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None,
             measures=None, regline=False, o2o=False, denscol=False, grid=False,
-            xlim=None, ylim=None, sort_z=False, legend=False):
+            xlim=None, ylim=None, sort_z=False, legend=False,
+            regline_label='regression', o2o_label='1-to-1'):
     """
     general function for creating scatter plots.
     
@@ -74,6 +75,10 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None,
         values are plotted last?
     legend: bool
         add a legend for the regression line and one-to-one line if they exist?
+    regline_label: str
+        the legend label for the regression line
+    o2o_label: str
+        the legend label for the one-to-one line
 
     Returns
     -------
@@ -158,10 +163,10 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None,
     if regline:
         ffit = np.poly1d((m, b))
         x_new = np.linspace(xmin + xo, xmax - xo, num=2)
-        plt.plot(x_new, ffit(x_new), color='red', zorder=2, label='reg.')
+        plt.plot(x_new, ffit(x_new), color='red', zorder=2, label=regline_label)
     if o2o:
         ax = plt.gca()
-        line = Line2D([0, 1], [0, 1], color='black', zorder=1, label='o2o')
+        line = Line2D([0, 1], [0, 1], color='black', zorder=1, label=o2o_label)
         transform = ax.transAxes
         line.set_transform(transform)
         ax.add_line(line)
