@@ -14,7 +14,9 @@ setup(name='S1_ARD',
       packages=find_packages(),
       include_package_data=True,
       version='0.9',
-      description='A common workspace for our publication in the MDPI Data special issue on data cubes',
+      description='Source code for the MDPI data publication '
+                  '"Towards Sentinel-1 SAR Analysis Ready Data: '
+                  'A best practices assessment on preparing backscatter data for the cube"',
       classifiers=[
           'Operating System :: Microsoft :: Windows',
           'Operating System :: POSIX :: Linux',
