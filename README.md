@@ -1,4 +1,4 @@
-# spatialist
+# S1_ARD
 [![Documentation Status][1]][2]
 
 Source code for the MDPI data publication  
