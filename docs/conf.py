@@ -33,7 +33,7 @@ version = '0.9'
 release = '0.9'
 
 # -- General configuration ------------------------------------------------
-autodoc_mock_imports = ['matplotlib']
+autodoc_mock_imports = ['osgeo']
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.6'
