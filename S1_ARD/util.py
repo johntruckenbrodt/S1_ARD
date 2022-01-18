@@ -144,7 +144,7 @@ def scatter(x, y, z=None, xlab='', ylab='', title='', nsamples=1000, mask=None,
         idx = z.argsort()
         x, y, z = x[idx], y[idx], z[idx]
     
-    plt.scatter(x, y, c=z, s=20, edgecolor='', zorder=3)
+    plt.scatter(x, y, c=z, s=20, edgecolor=None, zorder=3)
     
     # set axes range
     if xlim is not None:
